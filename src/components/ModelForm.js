@@ -13,6 +13,7 @@ import Typography from '@material-ui/core/Typography';
 import { makeStyles } from '@material-ui/core/styles';
 import Container from '@material-ui/core/Container';
 import * as tf from '@tensorflow/tfjs';
+import LinearProgress from '@material-ui/core/LinearProgress';
 
 
 function Copyright() {
@@ -49,28 +50,44 @@ const useStyles = makeStyles((theme) => ({
   input: {
     display: 'none',
   },
+  progress: {
+    width: '100%',
+    '& > * + *': {
+      marginTop: theme.spacing(2),
+    },
+  },
 }));
 
-export default function ModelForm() {
+export default function ModelForm({ resultDisplay }) {
     const [fileName, setFilename] = useState(""); 
-    const [file, setFile] = useState({}); 
+    const [file, setFile] = useState(""); 
+    const [myStyle, setStyle] = useState({ width: '100%', display: 'none' });
     const classes = useStyles();
 
 
     function onChange(event) {
-        var file = event.target.files[0];
-        setFilename(file.name);
+        var fileObj = event.target.files[0];
+        setFilename(fileObj.name);
+        let reader = new FileReader();
+        reader.onload = (e) => {
+          setFile(e.target.result);
+        };
+        reader.readAsDataURL(event.target.files[0]);
 
-        console.log(file);
 
-        setFile(file);
     }
 
     const onSubmit = async (event) => {
         event.preventDefault();
          // Pre-process the image
-	const model = await tf.loadLayersModel('../final_model_kaggle_version1/model.json');
-	let tensor = tf.browser.fromPixels(file)
+         setStyle({ width: '100%', display: 'block' });
+      
+         const img = new Image();
+         img.src = file;
+
+
+	const model = await tf.loadLayersModel('https://flamboyant-swartz-753878.netlify.app/final_model_kaggle_version1/model.json');
+	let tensor = tf.browser.fromPixels(img)
 	.resizeNearestNeighbor([224,224])
 	.toFloat();
 	
@@ -84,13 +101,13 @@ export default function ModelForm() {
 	
 
     const SKIN_CLASSES = {
-        0: 'akiec, Actinic Keratoses (Solar Keratoses) or intraepithelial Carcinoma (Bowen’s disease)',
-        1: 'bcc, Basal Cell Carcinoma',
-        2: 'bkl, Benign Keratosis',
-        3: 'df, Dermatofibroma',
-        4: 'mel, Melanoma',
-        5: 'nv, Melanocytic Nevi',
-        6: 'vasc, Vascular skin lesion'
+        0: 'Actinic Keratoses (Solar Keratoses) or intraepithelial Carcinoma (Bowen’s disease) [akiec]',
+        1: 'Basal Cell Carcinoma [bcc]',
+        2: 'Benign Keratosis [bkl]',
+        3: 'Dermatofibroma [df]',
+        4: 'Melanoma [mel]',
+        5: 'Melanocytic Nevi [nv]',
+        6: 'Vascular skin lesion [vasc]'
     
     };
   
@@ -103,7 +120,10 @@ export default function ModelForm() {
 	// data() loads the values of the output tensor and returns
 	// a promise of a typed array when the computation is complete.
 	// Notice the await and async keywords are used together.
-	let predictions = await model.predict(tensor).data();
+  let predictions = await model.predict(tensor).data();
+  
+  setStyle({ width: '100%', display: 'none' });
+  
 	let top5 = Array.from(predictions)
 		.map(function (p, i) { // this is Array.map
 			return {
@@ -120,6 +140,8 @@ export default function ModelForm() {
     console.log(top5);
         
 
+    resultDisplay(top5);
+
 
     }
 
@@ -135,6 +157,19 @@ export default function ModelForm() {
         </Typography>
         <form className={classes.form} noValidate onSubmit={onSubmit}>
           <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                variant="outlined"
+                required
+                fullWidth
+                id="email"
+                label="Upload Skin Lesion Image"
+                name="email"
+                autoComplete="text"
+                value={fileName}
+                disabled
+              />
+            </Grid>
             <Grid item xs={12} sm={6}>
             <input
                 accept="image/*"
@@ -151,17 +186,7 @@ export default function ModelForm() {
             </label>
             </Grid>
             <Grid item xs={12}>
-              <TextField
-                variant="outlined"
-                required
-                fullWidth
-                id="email"
-                label="Upload Skin Lesion Image"
-                name="email"
-                autoComplete="text"
-                value={fileName}
-                disabled
-              />
+              <img src={file} height="300" width="300" alt="Image Preview"/>
             </Grid>
           </Grid>
           <Button
@@ -174,12 +199,12 @@ export default function ModelForm() {
             Predict
           </Button>
           <Grid container justify="flex-end">
-            <Grid item>
-              <Link href="#" variant="body2">
-                Click Predict to get top three predictions
-              </Link>
+            <Grid item style={myStyle}>
+                <LinearProgress/>
             </Grid>
           </Grid>
+          
+
         </form>
       </div>
       {/* <Box mt={5}>
