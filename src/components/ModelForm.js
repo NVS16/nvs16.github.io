@@ -15,6 +15,10 @@ import Container from '@material-ui/core/Container';
 import * as tf from '@tensorflow/tfjs';
 import LinearProgress from '@material-ui/core/LinearProgress';
 
+import SampleImages from './SampleImages';
+
+import ImagePicker from 'react-image-picker'
+import 'react-image-picker/dist/index.css'
 
 function Copyright() {
   return (
@@ -61,11 +65,13 @@ const useStyles = makeStyles((theme) => ({
 export default function ModelForm({ resultDisplay }) {
     const [fileName, setFilename] = useState(""); 
     const [file, setFile] = useState(""); 
+    const [img, setImg] = useState(new Image()); 
     const [myStyle, setStyle] = useState({ width: '100%', display: 'none' });
     const classes = useStyles();
 
 
     function onChange(event) {
+        resultDisplay([]);
         var fileObj = event.target.files[0];
         setFilename(fileObj.name);
         let reader = new FileReader();
@@ -84,6 +90,7 @@ export default function ModelForm({ resultDisplay }) {
       
          const img = new Image();
          img.src = file;
+ 
 
 
 	const model = await tf.loadLayersModel('https://flamboyant-swartz-753878.netlify.app/final_model_kaggle_version1/model.json');
@@ -184,6 +191,9 @@ export default function ModelForm({ resultDisplay }) {
                     Upload
                 </Button>
             </label>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <SampleImages setResult={resultDisplay} setImgUrl={setFile} />
             </Grid>
             <Grid item xs={12}>
               <img src={file} height="300" width="300" alt="Image Preview"/>
